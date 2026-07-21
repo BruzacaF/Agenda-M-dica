@@ -1,0 +1,7 @@
+/* Estilos globais da aplicação */
+body {
+  margin: 0;
+  padding: 0;
+  background-color: #f4f7f6;
+  font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}

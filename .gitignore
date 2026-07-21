@@ -1,0 +1,76 @@
+# ==============================================================================
+# Agenda Médica - Git Ignore Configuration
+# ==============================================================================
+
+# --- Node / Angular / Frontend ---
+node_modules/
+dist/
+tmp/
+.angular/
+.sass-cache/
+connect.lock
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --- Python / Flask / Backend ---
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+.venv
+venv/
+ENV/
+env/
+.pytest_cache/
+
+# --- Database (SQLite) ---
+*.db
+*.db-journal
+*.db-shm
+*.db-wal
+*.sqlite
+*.sqlite3
+
+# --- Configuration & Environment ---
+.env
+.env.local
+.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# --- IDEs / Editors / OS Specific ---
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# --- Configurações de LLM / IA ---
+.agents/
+requisitos/

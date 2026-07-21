@@ -1,6 +1,21 @@
 from flask import Flask, jsonify
+from flask_cors import CORS
+from models import init_db
+from seed import run_seed
+from auth import auth_bp
 
 app = Flask(__name__)
+CORS(app)
+
+# Registra o Blueprint de Autenticação
+app.register_blueprint(auth_bp)
+
+# Inicializa o banco de dados e executa o seed no startup
+try:
+    init_db()
+    run_seed()
+except Exception as e:
+    print(f"Aviso durante a inicialização do app: {e}")
 
 @app.route("/")
 def home():

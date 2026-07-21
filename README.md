@@ -57,6 +57,15 @@ Os serviços estarão disponíveis nos seguintes endereços:
 
 ---
 
+## 🔑 Credenciais de Testes
+
+Para autenticação no sistema via frontend ou requisição HTTP direta (`POST /api/login`), utilize as credenciais padrão do usuário gerado via seed:
+
+- **E-mail**: `admin@agendamedica.com.br`
+- **Senha**: `AdminPassword123`
+
+---
+
 ## 📝 Detalhamento da Etapa 1 - Inicialização de Infraestrutura
 
 Esta etapa estabeleceu as fundações do projeto com os seguintes esqueletos e arquivos de configuração:

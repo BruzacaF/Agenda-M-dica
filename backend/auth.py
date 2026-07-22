@@ -12,15 +12,21 @@ SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'super-secret-key-agenda-medica')
 @auth_bp.route('/api/login', methods=['POST'])
 def login():
     try:
-        data = request.get_json(silent=True)
-        if data is None:
-            return jsonify({"error": "Payload JSON inválido ou ausente"}), 400
+        data = request.get_json(silent=True) or {}
+        fail_query = request.args.get('fail', 'false').lower() == 'true'
+        fail_body = bool(data.get('fail'))
+
+        if fail_query or fail_body:
+            return jsonify({"error": "O serviço de autenticação encontrou uma instabilidade temporária. Por favor, tente novamente em alguns instantes."}), 500
+
+        if not data:
+            return jsonify({"error": "Por favor, informe o e-mail e a senha para autenticação."}), 400
 
         email = data.get('email')
         senha = data.get('senha')
 
         if not email or not senha:
-            return jsonify({"error": "Email e senha são obrigatórios"}), 400
+            return jsonify({"error": "Por favor, preencha tanto o e-mail quanto a senha."}), 400
 
         conn = get_db_connection()
         cursor = conn.cursor()
@@ -29,7 +35,7 @@ def login():
         conn.close()
 
         if user is None or not check_password_hash(user['senha'], senha):
-            return jsonify({"error": "Credenciais inválidas"}), 401
+            return jsonify({"error": "E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente."}), 401
 
         payload = {
             'user_id': user['id'],

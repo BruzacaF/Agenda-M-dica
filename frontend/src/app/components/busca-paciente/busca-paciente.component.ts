@@ -26,6 +26,14 @@ export class BuscaPacienteComponent {
   @Output() search = new EventEmitter<{ type: string, value: string }>();
   @Output() clear = new EventEmitter<void>();
 
+  onInput(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      this.nomePaciente = input.value.replace(/[0-9]/g, '');
+      input.value = this.nomePaciente;
+    }
+  }
+
   onSearch(): void {
     if (this.nomePaciente.trim()) {
       this.search.emit({ type: 'paciente', value: this.nomePaciente.trim() });
@@ -37,3 +45,4 @@ export class BuscaPacienteComponent {
     this.clear.emit();
   }
 }
+

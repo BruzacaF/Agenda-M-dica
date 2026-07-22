@@ -2,6 +2,8 @@ import json
 import os
 import math
 import random
+import sqlite3
+import jwt
 from flask import Flask, jsonify, request
 from flask_cors import CORS
 
@@ -19,6 +21,78 @@ CORS(app)
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'agendamentos.json')
 TOTAL_MOCK_RECORDS = 1000
+SECRET_KEY = os.environ.get('JWT_SECRET_KEY', 'super-secret-key-agenda-medica')
+SQLITE_DB_PATH = os.environ.get('SQLITE_DB_PATH', os.path.join(os.path.dirname(__file__), '..', 'backend', 'database.db'))
+
+def verify_jwt_token(req):
+    auth_header = req.headers.get('Authorization')
+    if not auth_header:
+        return False, "Token de autenticação não fornecido no cabeçalho Authorization"
+    
+    parts = auth_header.split()
+    if len(parts) != 2 or parts[0].lower() != 'bearer':
+        return False, "Formato do cabeçalho Authorization inválido. Use 'Bearer <token>'"
+    
+    token = parts[1]
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return True, payload
+    except jwt.ExpiredSignatureError:
+        return False, "Token de autenticação expirado"
+    except jwt.InvalidTokenError:
+        return False, "Token de autenticação inválido"
+
+def save_to_sqlite(agendamentos):
+    try:
+        target_path = os.path.abspath(SQLITE_DB_PATH)
+        db_dir = os.path.dirname(target_path)
+        if db_dir and not os.path.exists(db_dir):
+            os.makedirs(db_dir, exist_ok=True)
+            
+        conn = sqlite3.connect(target_path)
+        cursor = conn.cursor()
+        cursor.execute('''
+            CREATE TABLE IF NOT EXISTS agendamentos (
+                id INTEGER PRIMARY KEY,
+                paciente TEXT,
+                cpf TEXT,
+                medico TEXT,
+                especialidade TEXT,
+                data TEXT,
+                horario TEXT,
+                convenio TEXT,
+                status TEXT
+            );
+        ''')
+        for item in agendamentos:
+            cursor.execute('''
+                INSERT INTO agendamentos (id, paciente, cpf, medico, especialidade, data, horario, convenio, status)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ON CONFLICT(id) DO UPDATE SET
+                    paciente=excluded.paciente,
+                    cpf=excluded.cpf,
+                    medico=excluded.medico,
+                    especialidade=excluded.especialidade,
+                    data=excluded.data,
+                    horario=excluded.horario,
+                    convenio=excluded.convenio,
+                    status=excluded.status
+            ''', (
+                item.get('id'),
+                item.get('paciente'),
+                item.get('cpf'),
+                item.get('medico'),
+                item.get('especialidade'),
+                item.get('data'),
+                item.get('horario'),
+                item.get('convenio'),
+                item.get('status')
+            ))
+        conn.commit()
+        conn.close()
+        print(f"[SQLite Mock API] {len(agendamentos)} agendamentos salvos no SQLite ('{target_path}').")
+    except Exception as e:
+        print(f"[SQLite Mock API Error] Falha ao salvar no SQLite: {e}")
 
 MEDICOS_ESPECIALIDADES = [
     ("Dr. Carlos Eduardo", "Cardiologia"),
@@ -55,34 +129,36 @@ def generate_1000_agendamentos():
             data_str = f"2026-07-{random.randint(1, 30):02d}"
             hora_str = f"{random.randint(8, 17):02d}:{random.choice(['00', '15', '30', '45'])}"
 
+        # Distribuição realista e variada de dados ausentes para testes de resiliência
+        rec_paciente = nome_paciente if i % 80 != 0 else None
+        rec_cpf = cpf_raw if i % 18 != 0 else None
+        rec_medico = medico if i % 32 != 0 else None
+        rec_especialidade = especialidade if i % 32 != 0 else None
+        rec_convenio = random.choice(CONVENIOS) if i % 24 != 0 else None
+        rec_status = random.choices(STATUS_LIST, weights=[60, 25, 15])[0] if i % 36 != 0 else None
+        rec_data = data_str if i % 70 != 0 else None
+        rec_horario = hora_str if i % 70 != 0 else None
+
         agendamentos.append({
             "id": i,
-            "paciente": nome_paciente,
-            "cpf": cpf_raw,
-            "medico": medico,
-            "especialidade": especialidade,
-            "data": data_str,
-            "horario": hora_str,
-            "convenio": random.choice(CONVENIOS),
-            "status": random.choices(STATUS_LIST, weights=[60, 25, 15])[0]
+            "paciente": rec_paciente,
+            "cpf": rec_cpf,
+            "medico": rec_medico,
+            "especialidade": rec_especialidade,
+            "data": rec_data,
+            "horario": rec_horario,
+            "convenio": rec_convenio,
+            "status": rec_status
         })
 
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(agendamentos, f, ensure_ascii=False, indent=2)
 
+    save_to_sqlite(agendamentos)
     return agendamentos
 
 def load_agendamentos():
-    if not os.path.exists(DATA_FILE):
-        return generate_1000_agendamentos()
-    try:
-        with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            data = json.load(f)
-            if len(data) < TOTAL_MOCK_RECORDS:
-                return generate_1000_agendamentos()
-            return data
-    except Exception:
-        return generate_1000_agendamentos()
+    return generate_1000_agendamentos()
 
 load_agendamentos()
 
@@ -97,9 +173,14 @@ def health():
 @app.route("/api/agendamentos", methods=['GET'])
 def get_agendamentos():
     try:
+        is_valid, token_res = verify_jwt_token(request)
+        if not is_valid:
+            return jsonify({"error": f"Acesso não autorizado. {token_res}"}), 401
+
         fail = request.args.get('fail', 'false').lower() == 'true'
         if fail:
-            return jsonify({"error": "Erro interno simulado na Mock API"}), 500
+            return jsonify({"error": "Identificamos uma instabilidade temporária no serviço de agendamentos. Por favor, tente novamente em instantes."}), 500
+
 
         empty = request.args.get('empty', 'false').lower() == 'true'
         if empty:
@@ -162,6 +243,15 @@ def get_agendamentos():
 
             if match:
                 filtered.append(item)
+
+        incomplete_only = request.args.get('incomplete', 'false').lower() == 'true'
+        if incomplete_only:
+            filtered = [
+                item for item in filtered
+                if not item.get('paciente') or not item.get('cpf') or not item.get('medico')
+                or not item.get('especialidade') or not item.get('convenio') or not item.get('status')
+                or not item.get('data') or not item.get('horario')
+            ]
 
         total_items = len(filtered)
         total_pages = math.ceil(total_items / limit) if total_items > 0 else 1

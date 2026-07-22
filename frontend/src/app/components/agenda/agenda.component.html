@@ -56,6 +56,36 @@
           <mat-icon *ngIf="simulateEmpty">filter_list_off</mat-icon>
           {{ simulateEmpty ? 'Desativar Lista Vazia' : 'Simular Lista Vazia' }}
         </button>
+
+        <button 
+          mat-stroked-button 
+          [color]="simulateIncomplete ? 'accent' : 'basic'" 
+          (click)="toggleSimulateIncomplete()"
+          class="btn-sim-toggle"
+          title="Filtra a lista exibindo apenas os registros com campos ausentes/nulos para testes de resiliência">
+          <mat-icon *ngIf="simulateIncomplete">running_with_errors</mat-icon>
+          {{ simulateIncomplete ? 'Desativar Filtro Incompletos' : 'Exibir Registros Incompletos' }}
+        </button>
+
+        <button 
+          mat-stroked-button 
+          [color]="simulateOffline ? 'warn' : 'basic'" 
+          (click)="toggleSimulateOffline()"
+          class="btn-sim-toggle"
+          title="Simula queda de conexão ou serviço da Mock API offline (Conexão Recusada)">
+          <mat-icon *ngIf="simulateOffline">wifi_off</mat-icon>
+          {{ simulateOffline ? 'Desativar API Offline' : 'Simular API Offline' }}
+        </button>
+
+        <button 
+          mat-stroked-button 
+          color="warn" 
+          (click)="removeToken()"
+          class="btn-sim-toggle"
+          title="Exclui o token JWT do localStorage para testar erro 401 Unauthorized">
+          <mat-icon>key_off</mat-icon>
+          <span>Remover Token (Simular 401)</span>
+        </button>
       </div>
     </div>
 
@@ -141,7 +171,7 @@
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="multi-field">
                 <mat-label>Nome do Paciente</mat-label>
                 <mat-icon matIconPrefix color="primary">person</mat-icon>
-                <input matInput type="text" [(ngModel)]="multiPaciente" name="multiPaciente" placeholder="Ex: Ana Maria" autocomplete="off" />
+                <input matInput type="text" [ngModel]="multiPaciente" (input)="onMultiPacienteInput($event)" name="multiPaciente" placeholder="Ex: Ana Maria" autocomplete="off" />
               </mat-form-field>
 
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="multi-field">
@@ -153,7 +183,7 @@
               <mat-form-field appearance="outline" subscriptSizing="dynamic" class="multi-field">
                 <mat-label>Nome do Médico</mat-label>
                 <mat-icon matIconPrefix color="primary">medical_services</mat-icon>
-                <input matInput type="text" [(ngModel)]="multiMedico" name="multiMedico" placeholder="Ex: Dr. Carlos" autocomplete="off" />
+                <input matInput type="text" [ngModel]="multiMedico" (input)="onMultiMedicoInput($event)" name="multiMedico" placeholder="Ex: Dr. Carlos" autocomplete="off" />
               </mat-form-field>
             </div>
 
@@ -207,10 +237,16 @@
     <div *ngIf="errorMessage" class="error-banner-mat animate-fade-in">
       <mat-icon color="warn">error_outline</mat-icon>
       <div class="banner-text">
-        <strong>Falha de Comunicação:</strong>
+        <strong>{{ isAuthError ? 'Autenticação Necessária:' : 'Falha de Comunicação:' }}</strong>
         <span>{{ errorMessage }}</span>
       </div>
-      <button mat-flat-button color="warn" (click)="loadData()">Tentar Novamente</button>
+      <button mat-flat-button color="warn" *ngIf="isAuthError" (click)="logout()">
+        <mat-icon>login</mat-icon>
+        <span>Ir para o Login</span>
+      </button>
+      <button mat-flat-button color="warn" *ngIf="!isAuthError" (click)="loadData()">
+        <span>Tentar Novamente</span>
+      </button>
     </div>
 
     <!-- Loading State (MatSpinner) -->
@@ -220,7 +256,7 @@
     </div>
 
     <!-- Container da Tabela TABULATOR (MatCard Encapsulator) -->
-    <mat-card [hidden]="loading" class="table-mat-card">
+    <mat-card [hidden]="loading || !!errorMessage" class="table-mat-card">
       <mat-card-content class="table-card-body">
         <!-- O DIV DO TABULATOR CONTINUA AQUI ESTRITAMENTE MANTIDO -->
         <div #tabulatorTable class="tabulator-container"></div>

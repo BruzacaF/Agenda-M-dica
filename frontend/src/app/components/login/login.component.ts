@@ -34,6 +34,11 @@ export class LoginComponent implements OnInit {
   returnUrl = '/agenda';
   hidePassword = true;
 
+  // Sidebar / Painel de Opções de Inicialização (Ambiente de Teste)
+  sidebarOpen = false;
+  simulateFail = false;
+  simulateOffline = false;
+
   constructor(
     private fb: FormBuilder,
     private authService: AuthService,
@@ -55,6 +60,30 @@ export class LoginComponent implements OnInit {
     this.returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/agenda';
   }
 
+  toggleSidebar(): void {
+    this.sidebarOpen = !this.sidebarOpen;
+  }
+
+  toggleSimulateFail(): void {
+    this.simulateFail = !this.simulateFail;
+    if (this.simulateFail) {
+      this.simulateOffline = false;
+    }
+  }
+
+  toggleSimulateOffline(): void {
+    this.simulateOffline = !this.simulateOffline;
+    if (this.simulateOffline) {
+      this.simulateFail = false;
+    }
+  }
+
+  clearToken(): void {
+    localStorage.removeItem('agenda_medica_token');
+    localStorage.removeItem('agenda_medica_user');
+    this.errorMessage = 'Token de sessão local removido com sucesso.';
+  }
+
   onSubmit(): void {
     if (this.loginForm.invalid) {
       this.loginForm.markAllAsTouched();
@@ -66,7 +95,7 @@ export class LoginComponent implements OnInit {
 
     const { email, senha } = this.loginForm.value;
 
-    this.authService.login(email, senha).subscribe({
+    this.authService.login(email, senha, this.simulateFail, this.simulateOffline).subscribe({
       next: () => {
         this.loading = false;
         this.router.navigateByUrl(this.returnUrl);

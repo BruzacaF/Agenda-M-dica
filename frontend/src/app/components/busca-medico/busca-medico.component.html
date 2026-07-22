@@ -5,7 +5,8 @@
     <input 
       matInput 
       type="text" 
-      [(ngModel)]="nomeMedico" 
+      [ngModel]="nomeMedico" 
+      (input)="onInput($event)"
       name="nomeMedico" 
       placeholder="Ex: Dr. Carlos Eduardo..."
       autocomplete="off"

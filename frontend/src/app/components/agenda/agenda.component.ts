@@ -2,6 +2,20 @@ import { Component, OnInit, AfterViewInit, OnDestroy, ElementRef, ViewChild } fr
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
+
+// Angular Material Modules
+import { MatToolbarModule } from '@angular/material/toolbar';
+import { MatCardModule } from '@angular/material/card';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatButtonToggleModule } from '@angular/material/button-toggle';
+import { MatButtonModule } from '@angular/material/button';
+import { MatIconModule } from '@angular/material/icon';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatChipsModule } from '@angular/material/chips';
+import { MatTooltipModule } from '@angular/material/tooltip';
+
 // @ts-ignore
 import { TabulatorFull as Tabulator } from 'tabulator-tables';
 import { AgendaService, AgendaFilters } from '../../services/agenda.service';
@@ -17,7 +31,18 @@ import { BuscaMedicoComponent } from '../busca-medico/busca-medico.component';
   standalone: true,
   imports: [
     CommonModule, 
-    FormsModule, 
+    FormsModule,
+    MatToolbarModule,
+    MatCardModule,
+    MatTabsModule,
+    MatButtonToggleModule,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatChipsModule,
+    MatTooltipModule,
     BuscaPacienteComponent, 
     BuscaCpfComponent, 
     BuscaMedicoComponent
@@ -28,18 +53,21 @@ import { BuscaMedicoComponent } from '../busca-medico/busca-medico.component';
 export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   @ViewChild('tabulatorTable', { static: false }) tableElement!: ElementRef;
 
+  // TABULATOR CONTINUA SENDO O MOTOR ESTRITO DA TABELA
   tabulatorInstance?: Tabulator;
   currentUser: User | null = null;
   agendamentos: Agendamento[] = [];
   
   loading = false;
   errorMessage = '';
+  isAuthError = false;
   
   // Modo de Busca: 'individual' (Abas) ou 'multi' (Agrupado)
   searchMode: 'individual' | 'multi' = 'individual';
   
   // Aba Ativa para Filtro Individual ('paciente' | 'cpf' | 'medico')
   activeSearchTab: 'paciente' | 'cpf' | 'medico' = 'paciente';
+  selectedTabIndex = 0;
   
   // Objeto de Filtros Ativos para o Servidor (Paciente, CPF, Médico)
   activeFilters: AgendaFilters = {};
@@ -58,6 +86,8 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   // Flags para simulação de cenários da Mock API
   simulateFail = false;
   simulateEmpty = false;
+  simulateOffline = false;
+  simulateIncomplete = false;
 
   constructor(
     private agendaService: AgendaService,
@@ -82,13 +112,16 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   loadData(): void {
     this.loading = true;
     this.errorMessage = '';
+    this.isAuthError = false;
 
     this.agendaService.getAgendamentos(
       this.currentPage,
       this.pageSize,
       this.activeFilters,
       this.simulateFail,
-      this.simulateEmpty
+      this.simulateEmpty,
+      this.simulateOffline,
+      this.simulateIncomplete
     ).subscribe({
       next: (res) => {
         this.loading = false;
@@ -98,9 +131,14 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
         this.currentPage = res.page;
         this.initOrUpdateTable(res.data);
       },
-      error: (err) => {
+      error: (err: any) => {
         this.loading = false;
         this.errorMessage = err.message || 'Erro ao carregar lista de agendamentos.';
+        this.isAuthError = !this.authService.isLoggedIn() || err.status === 401 || (err.message && (err.message.includes('expirou') || err.message.includes('autorizado') || err.message.includes('sessão')));
+        this.agendamentos = [];
+        this.totalRecords = 0;
+        this.totalPages = 1;
+        this.currentPage = 1;
         if (this.tabulatorInstance) {
           this.tabulatorInstance.setData([]);
         }
@@ -117,6 +155,7 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
       return;
     }
 
+    // INICIALIZAÇÃO DA TABELA TABULATOR
     this.tabulatorInstance = new Tabulator(this.tableElement.nativeElement, {
       data: data,
       layout: 'fitColumns',
@@ -133,15 +172,51 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
           headerHozAlign: 'center',
           formatter: (cell: any) => {
             const val = cell.getValue();
-            if (!val || val === '----/--/--') return val || '';
+            if (!val || val === '----/--/--') return `<span style="color: #94a3b8; font-style: italic;">----/--/--</span>`;
             const parts = val.split('-');
             return parts.length === 3 ? `${parts[2]}/${parts[1]}/${parts[0]}` : val;
           }
         },
-        { title: 'Horário', field: 'horario', width: 90, hozAlign: 'center', headerHozAlign: 'center' },
-        { title: 'Paciente', field: 'paciente', minWidth: 160 },
-        { title: 'CPF', field: 'cpf', width: 140, hozAlign: 'center', headerHozAlign: 'center' },
-        { title: 'Médico', field: 'medico', minWidth: 160 },
+        { 
+          title: 'Horário', 
+          field: 'horario', 
+          width: 90, 
+          hozAlign: 'center', 
+          headerHozAlign: 'center',
+          formatter: (cell: any) => {
+            const val = cell.getValue();
+            return val === '--:--' ? `<span style="color: #94a3b8; font-style: italic;">--:--</span>` : val;
+          }
+        },
+        { 
+          title: 'Paciente', 
+          field: 'paciente', 
+          minWidth: 160,
+          formatter: (cell: any) => {
+            const val = cell.getValue();
+            return val === 'Paciente Não Identificado' ? `<span style="color: #94a3b8; font-style: italic;">${val}</span>` : val;
+          }
+        },
+        { 
+          title: 'CPF', 
+          field: 'cpf', 
+          width: 140, 
+          hozAlign: 'center', 
+          headerHozAlign: 'center',
+          formatter: (cell: any) => {
+            const val = cell.getValue();
+            return val === '---' ? `<span style="color: #94a3b8; font-style: italic;">${val}</span>` : val;
+          }
+        },
+        { 
+          title: 'Médico', 
+          field: 'medico', 
+          minWidth: 160,
+          formatter: (cell: any) => {
+            const val = cell.getValue();
+            return val === 'Médico Não Informado' ? `<span style="color: #94a3b8; font-style: italic;">${val}</span>` : val;
+          }
+        },
         { title: 'Especialidade', field: 'especialidade', width: 140 },
         { title: 'Convênio', field: 'convenio', width: 130 },
         { 
@@ -162,7 +237,6 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     setTimeout(() => this.tabulatorInstance?.redraw(true), 100);
   }
 
-  // Tratador para busca individual de cada um dos 3 componentes (Estrito por campo)
   handleIndividualSearch(event: { type: string, value: string }): void {
     this.activeFilters = {};
     if (event.type === 'paciente') {
@@ -176,7 +250,38 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadData();
   }
 
-  // Executa o agrupamento de múltiplos filtros simultâneos (AND logic)
+  onMultiPacienteInput(event: any): void {
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      this.multiPaciente = input.value.replace(/[0-9]/g, '');
+      input.value = this.multiPaciente;
+    }
+  }
+
+  onMultiMedicoInput(event: any): void {
+    const input = event.target as HTMLInputElement;
+    if (input) {
+      this.multiMedico = input.value.replace(/[0-9]/g, '');
+      input.value = this.multiMedico;
+    }
+  }
+
+  onMultiCpfInput(event: any): void {
+    let value = event.target.value.replace(/\D/g, '');
+    if (value.length > 11) value = value.substring(0, 11);
+
+    if (value.length > 9) {
+      this.multiCpf = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6, 9)}-${value.substring(9)}`;
+    } else if (value.length > 6) {
+      this.multiCpf = `${value.substring(0, 3)}.${value.substring(3, 6)}.${value.substring(6)}`;
+    } else if (value.length > 3) {
+      this.multiCpf = `${value.substring(0, 3)}.${value.substring(3)}`;
+    } else {
+      this.multiCpf = value;
+    }
+  }
+
+
   applyMultiSearch(): void {
     const filters: AgendaFilters = {};
     if (this.multiPaciente.trim()) filters.paciente = this.multiPaciente.trim();
@@ -197,8 +302,11 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
     this.loadData();
   }
 
-  selectSearchTab(tab: 'paciente' | 'cpf' | 'medico'): void {
-    this.activeSearchTab = tab;
+  onTabChange(index: number): void {
+    this.selectedTabIndex = index;
+    if (index === 0) this.activeSearchTab = 'paciente';
+    else if (index === 1) this.activeSearchTab = 'cpf';
+    else if (index === 2) this.activeSearchTab = 'medico';
   }
 
   switchSearchMode(mode: 'individual' | 'multi'): void {
@@ -232,14 +340,44 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
 
   toggleSimulateFail(): void {
     this.simulateFail = !this.simulateFail;
-    if (this.simulateFail) this.simulateEmpty = false;
+    if (this.simulateFail) {
+      this.simulateEmpty = false;
+      this.simulateOffline = false;
+      this.simulateIncomplete = false;
+    }
     this.currentPage = 1;
     this.loadData();
   }
 
   toggleSimulateEmpty(): void {
     this.simulateEmpty = !this.simulateEmpty;
-    if (this.simulateEmpty) this.simulateFail = false;
+    if (this.simulateEmpty) {
+      this.simulateFail = false;
+      this.simulateOffline = false;
+      this.simulateIncomplete = false;
+    }
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  toggleSimulateOffline(): void {
+    this.simulateOffline = !this.simulateOffline;
+    if (this.simulateOffline) {
+      this.simulateFail = false;
+      this.simulateEmpty = false;
+      this.simulateIncomplete = false;
+    }
+    this.currentPage = 1;
+    this.loadData();
+  }
+
+  toggleSimulateIncomplete(): void {
+    this.simulateIncomplete = !this.simulateIncomplete;
+    if (this.simulateIncomplete) {
+      this.simulateFail = false;
+      this.simulateEmpty = false;
+      this.simulateOffline = false;
+    }
     this.currentPage = 1;
     this.loadData();
   }
@@ -247,5 +385,11 @@ export class AgendaComponent implements OnInit, AfterViewInit, OnDestroy {
   logout(): void {
     this.authService.logout();
     this.router.navigate(['/login']);
+  }
+
+  removeToken(): void {
+    localStorage.removeItem('agenda_medica_token');
+    this.isAuthError = true;
+    this.loadData();
   }
 }

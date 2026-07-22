@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpErrorResponse } from '@angular/common/http';
+import { HttpClient, HttpErrorResponse, HttpParams } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, tap } from 'rxjs/operators';
 import { LoginResponse, User } from '../models/user.model';
@@ -14,8 +14,18 @@ export class AuthService {
 
   constructor(private http: HttpClient) {}
 
-  login(email: string, senha: string): Observable<LoginResponse> {
-    return this.http.post<LoginResponse>(`${this.apiUrl}/login`, { email, senha }).pipe(
+  login(
+    email: string, 
+    senha: string, 
+    fail: boolean = false, 
+    offline: boolean = false
+  ): Observable<LoginResponse> {
+    let targetUrl = offline ? 'http://localhost:5999/api/login' : `${this.apiUrl}/login`;
+    if (fail) {
+      targetUrl += '?fail=true';
+    }
+
+    return this.http.post<LoginResponse>(targetUrl, { email, senha, fail }).pipe(
       tap((res) => {
         if (res.token) {
           localStorage.setItem(this.TOKEN_KEY, res.token);
@@ -50,14 +60,18 @@ export class AuthService {
   }
 
   private handleError(error: HttpErrorResponse) {
-    let errorMessage = 'Ocorreu um erro ao tentar realizar o login.';
-    if (error.error && typeof error.error === 'object' && error.error.error) {
-      errorMessage = error.error.error;
-    } else if (error.status === 0) {
-      errorMessage = 'Servidor de autenticação indisponível. Verifique sua conexão ou se o backend está ativo.';
+    let errorMessage = 'Ocorreu uma falha ao tentar realizar o login. Por favor, tente novamente.';
+
+    if (error.status === 0) {
+      errorMessage = 'Não foi possível conectar ao servidor. Por favor, verifique sua conexão com a internet ou tente novamente em alguns instantes.';
     } else if (error.status === 401) {
-      errorMessage = 'Credenciais inválidas. Verifique seu e-mail e senha.';
+      errorMessage = 'E-mail ou senha incorretos. Por favor, verifique suas credenciais e tente novamente.';
+    } else if (error.status === 500) {
+      errorMessage = 'O serviço de autenticação encontrou uma instabilidade temporária. Por favor, tente novamente em alguns instantes.';
+    } else if (error.error && typeof error.error === 'object' && error.error.error) {
+      errorMessage = error.error.error;
     }
+
     return throwError(() => new Error(errorMessage));
   }
 }

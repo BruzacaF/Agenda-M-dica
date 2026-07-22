@@ -1,4 +1,15 @@
 <div class="login-wrapper">
+  <!-- Botão Flutuante de Atalho para Opções de Teste -->
+  <button 
+    mat-stroked-button 
+    (click)="toggleSidebar()" 
+    class="btn-test-options-toggle"
+    title="Abrir painel de opções de inicialização e simulação de erros">
+    <mat-icon>tune</mat-icon>
+    <span>Opções de Teste</span>
+  </button>
+
+  <!-- Card Principal de Login -->
   <mat-card class="login-card">
     <mat-card-header class="login-card-header">
       <div class="brand-badge">
@@ -20,12 +31,7 @@
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>E-mail Corporativo</mat-label>
           <mat-icon matIconPrefix color="primary">email</mat-icon>
-          <input 
-            matInput 
-            type="email" 
-            formControlName="email" 
-            placeholder="ex: admin@agendamedica.com.br"
-          />
+          <input matInput type="email" formControlName="email" placeholder="ex: admin@agendamedica.com.br" />
           <mat-error *ngIf="loginForm.get('email')?.hasError('required')">
             O e-mail é obrigatório.
           </mat-error>
@@ -38,19 +44,10 @@
         <mat-form-field appearance="outline" class="full-width">
           <mat-label>Senha de Acesso</mat-label>
           <mat-icon matIconPrefix color="primary">lock</mat-icon>
-          <input 
-            matInput 
-            [type]="hidePassword ? 'password' : 'text'" 
-            formControlName="senha" 
-            placeholder="Sua senha secreta"
-          />
-          <button 
-            type="button" 
-            mat-icon-button 
-            matSuffix 
-            (click)="hidePassword = !hidePassword" 
-            [attr.aria-label]="'Ocultar senha'" 
-            [attr.aria-pressed]="hidePassword">
+          <input matInput [type]="hidePassword ? 'password' : 'text'" formControlName="senha"
+            placeholder="Sua senha secreta" />
+          <button type="button" mat-icon-button matSuffix (click)="hidePassword = !hidePassword"
+            [attr.aria-label]="'Ocultar senha'" [attr.aria-pressed]="hidePassword">
             <mat-icon>{{ hidePassword ? 'visibility_off' : 'visibility' }}</mat-icon>
           </button>
           <mat-error *ngIf="loginForm.get('senha')?.hasError('required')">
@@ -62,12 +59,7 @@
         </mat-form-field>
 
         <!-- Botão Login -->
-        <button 
-          mat-raised-button 
-          color="primary" 
-          type="submit" 
-          class="btn-submit" 
-          [disabled]="loading">
+        <button mat-raised-button color="primary" type="submit" class="btn-submit" [disabled]="loading">
           <mat-spinner diameter="20" *ngIf="loading" class="spinner-btn"></mat-spinner>
           <span *ngIf="!loading">Entrar no Sistema</span>
         </button>
@@ -82,4 +74,69 @@
       </div>
     </mat-card-footer>
   </mat-card>
+
+  <!-- Overlay de Fundo para Fechar a Sidebar -->
+  <div class="sidebar-overlay" *ngIf="sidebarOpen" (click)="toggleSidebar()"></div>
+
+  <!-- Sidebar Lateral de Opções de Inicialização (Ambiente de Teste) -->
+  <aside class="test-sidebar" [class.open]="sidebarOpen">
+    <div class="sidebar-header">
+      <div class="sidebar-title-group">
+        <mat-icon color="primary">tune</mat-icon>
+        <div>
+          <h3>Opções de Inicialização</h3>
+          <p>Ambiente de Teste & Resiliência</p>
+        </div>
+      </div>
+      <button mat-icon-button (click)="toggleSidebar()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <div class="sidebar-content">
+      <p class="sidebar-description">
+        Configure cenários de teste para simular falhas do servidor de autenticação antes de efetuar o login:
+      </p>
+
+      <div class="test-controls-group">
+        <!-- Simular Erro 500 -->
+        <button 
+          mat-stroked-button 
+          [color]="simulateFail ? 'warn' : 'basic'" 
+          (click)="toggleSimulateFail()"
+          class="sidebar-test-btn">
+          <mat-icon *ngIf="simulateFail">warning</mat-icon>
+          <mat-icon *ngIf="!simulateFail">report_problem</mat-icon>
+          <span>{{ simulateFail ? 'Desativar Erro 500' : 'Simular Erro 500 no Login' }}</span>
+        </button>
+
+        <!-- Simular Backend Offline -->
+        <button 
+          mat-stroked-button 
+          [color]="simulateOffline ? 'warn' : 'basic'" 
+          (click)="toggleSimulateOffline()"
+          class="sidebar-test-btn">
+          <mat-icon *ngIf="simulateOffline">wifi_off</mat-icon>
+          <mat-icon *ngIf="!simulateOffline">portable_wifi_off</mat-icon>
+          <span>{{ simulateOffline ? 'Desativar Backend Offline' : 'Simular Backend Offline (Conexão Recusada)' }}</span>
+        </button>
+
+        <!-- Limpar Token Local -->
+        <button 
+          mat-stroked-button 
+          color="warn" 
+          (click)="clearToken()"
+          class="sidebar-test-btn">
+          <mat-icon>key_off</mat-icon>
+          <span>Limpar Token / Sessão Local</span>
+        </button>
+      </div>
+
+      <div class="active-status-box" *ngIf="simulateFail || simulateOffline">
+        <strong>Estado Ativo de Teste:</strong>
+        <span *ngIf="simulateFail">Simulação de HTTP 500 ativada. O login retornará falha interna do servidor.</span>
+        <span *ngIf="simulateOffline">Simulação de Backend Offline ativada. O login tentará conectar em porta inválida (Conexão Recusada).</span>
+      </div>
+    </div>
+  </aside>
 </div>

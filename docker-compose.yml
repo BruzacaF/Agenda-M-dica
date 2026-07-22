@@ -11,6 +11,7 @@ services:
     environment:
       - FLASK_ENV=development
       - PORT=5000
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-super-secret-key-agenda-medica}
     networks:
       - agenda-medica-network
 
@@ -21,9 +22,12 @@ services:
       - "5001:5001"
     volumes:
       - ./mock-api:/app
+      - ./backend:/backend_db
     environment:
       - FLASK_ENV=development
       - PORT=5001
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-super-secret-key-agenda-medica}
+      - SQLITE_DB_PATH=/backend_db/database.db
     networks:
       - agenda-medica-network
 

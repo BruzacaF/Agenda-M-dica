@@ -1,250 +1,255 @@
-<div class="agenda-layout">
-  <!-- Navbar Topo -->
-  <header class="navbar">
-    <div class="navbar-brand">
-      <div class="logo-icon">
-        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/>
-          <path d="M12 5v14"/>
-        </svg>
+<div class="agenda-layout-material">
+  <!-- Navbar de Alto Contraste & Design Médico Moderno -->
+  <mat-toolbar color="primary" class="app-toolbar">
+    <div class="brand-group">
+      <div class="logo-badge">
+        <mat-icon class="brand-icon">health_and_safety</mat-icon>
       </div>
-      <span class="brand-title">Agenda Médica</span>
+      <div class="brand-text">
+        <span class="brand-title">Agenda Médica</span>
+        <span class="brand-subtitle">Gestão Clínica</span>
+      </div>
     </div>
 
+    <span class="spacer"></span>
+
     <div class="user-panel" *ngIf="currentUser">
+      <div class="user-avatar-badge">
+        <mat-icon>person</mat-icon>
+      </div>
       <div class="user-info">
         <span class="user-name">{{ currentUser.nome }}</span>
         <span class="user-email">{{ currentUser.email }}</span>
       </div>
-      <button (click)="logout()" class="btn-logout" title="Sair do sistema">
-        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/>
-          <polyline points="16 17 21 12 16 7"/>
-          <line x1="21" y1="12" x2="9" y2="12"/>
-        </svg>
+      <button mat-stroked-button (click)="logout()" class="btn-logout-high-contrast" title="Sair do sistema">
+        <mat-icon>logout</mat-icon>
         <span>Sair</span>
       </button>
     </div>
-  </header>
+  </mat-toolbar>
 
-  <!-- Container Conteúdo -->
-  <main class="content-container">
+  <!-- Container de Conteúdo Principal -->
+  <main class="content-container animate-fade-in">
     <div class="page-header">
       <div>
-        <h1>Consultas e Agendamentos</h1>
-        <p class="subtitle">Pesquisa com filtros individuais ou agrupados por múltiplos campos</p>
+        <h1 class="title-text">Consultas e Agendamentos</h1>
+        <p class="subtitle-text">Gestão centralizada de consultas, pacientes e corpo clínico</p>
       </div>
 
-      <!-- Test Controls / Resilience Simulator -->
+      <!-- Simuladores de Testes API (Resiliência) -->
       <div class="simulators-bar">
-        <span class="simulators-label">Simular Testes API:</span>
+        <span class="simulators-label">Ambiente de Teste:</span>
         <button 
-          (click)="toggleSimulateFail()" 
-          class="btn-sim" 
-          [class.active-danger]="simulateFail">
+          mat-stroked-button 
+          [color]="simulateFail ? 'warn' : 'basic'" 
+          (click)="toggleSimulateFail()"
+          class="btn-sim-toggle">
+          <mat-icon *ngIf="simulateFail">warning</mat-icon>
           {{ simulateFail ? 'Desativar Erro 500' : 'Simular Erro 500' }}
         </button>
 
         <button 
-          (click)="toggleSimulateEmpty()" 
-          class="btn-sim" 
-          [class.active-warning]="simulateEmpty">
+          mat-stroked-button 
+          [color]="simulateEmpty ? 'accent' : 'basic'" 
+          (click)="toggleSimulateEmpty()"
+          class="btn-sim-toggle">
+          <mat-icon *ngIf="simulateEmpty">filter_list_off</mat-icon>
           {{ simulateEmpty ? 'Desativar Lista Vazia' : 'Simular Lista Vazia' }}
         </button>
       </div>
     </div>
 
-    <!-- Seção Principal de Busca (Modo Individual ou Multi-Filtros) -->
-    <div class="search-section-card">
-      <div class="mode-selector-bar">
-        <div class="mode-toggle">
-          <button 
-            (click)="switchSearchMode('individual')" 
-            class="mode-btn" 
-            [class.active]="searchMode === 'individual'">
-            Filtros Individuais (Por Aba)
-          </button>
-          <button 
-            (click)="switchSearchMode('multi')" 
-            class="mode-btn" 
-            [class.active]="searchMode === 'multi'">
-            Múltiplos Filtros (Agrupados)
-          </button>
+    <!-- Card de Seção de Busca (Angular Material Card Elevado) -->
+    <mat-card class="search-card">
+      <mat-card-header class="search-card-header">
+        <mat-button-toggle-group 
+          [value]="searchMode" 
+          (change)="switchSearchMode($event.value)" 
+          aria-label="Modo de Pesquisa"
+          class="mode-toggle-group">
+          <mat-button-toggle value="individual">
+            <mat-icon>tab</mat-icon> Filtros Por Aba
+          </mat-button-toggle>
+          <mat-button-toggle value="multi">
+            <mat-icon>filter_alt</mat-icon> Múltiplos Filtros
+          </mat-button-toggle>
+        </mat-button-toggle-group>
+      </mat-card-header>
+
+      <mat-card-content class="search-card-body">
+        <!-- OPÇÃO A: Filtros Individuais por Aba (MatTabs) -->
+        <div *ngIf="searchMode === 'individual'" class="individual-mode-wrapper animate-fade-in">
+          <mat-tab-group 
+            [selectedIndex]="selectedTabIndex" 
+            (selectedIndexChange)="onTabChange($event)" 
+            animationDuration="250ms" 
+            color="primary"
+            class="custom-mat-tabs">
+            
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">person_search</mat-icon>
+                <span class="tab-label-text">Buscar por Paciente</span>
+              </ng-template>
+              <ng-template matTabContent>
+                <div class="tab-content-padding">
+                  <app-busca-paciente 
+                    (search)="handleIndividualSearch($event)" 
+                    (clear)="clearAllFilters()">
+                  </app-busca-paciente>
+                </div>
+              </ng-template>
+            </mat-tab>
+
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">badge</mat-icon>
+                <span class="tab-label-text">Buscar por CPF</span>
+              </ng-template>
+              <ng-template matTabContent>
+                <div class="tab-content-padding">
+                  <app-busca-cpf 
+                    (search)="handleIndividualSearch($event)" 
+                    (clear)="clearAllFilters()">
+                  </app-busca-cpf>
+                </div>
+              </ng-template>
+            </mat-tab>
+
+            <mat-tab>
+              <ng-template mat-tab-label>
+                <mat-icon class="tab-icon">medical_services</mat-icon>
+                <span class="tab-label-text">Buscar por Médico</span>
+              </ng-template>
+              <ng-template matTabContent>
+                <div class="tab-content-padding">
+                  <app-busca-medico 
+                    (search)="handleIndividualSearch($event)" 
+                    (clear)="clearAllFilters()">
+                  </app-busca-medico>
+                </div>
+              </ng-template>
+            </mat-tab>
+
+          </mat-tab-group>
         </div>
-      </div>
 
-      <!-- OPÇÃO A: Filtros Individuais via Abas -->
-      <div *ngIf="searchMode === 'individual'" class="individual-mode-container">
-        <div class="search-tabs">
-          <button 
-            (click)="selectSearchTab('paciente')" 
-            class="tab-btn" 
-            [class.active]="activeSearchTab === 'paciente'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
-              <circle cx="12" cy="7" r="4"/>
-            </svg>
-            Buscar por Paciente
-          </button>
+        <!-- OPÇÃO B: Agrupamento de Múltiplos Filtros (Formulário Material Com Enquadramento) -->
+        <div *ngIf="searchMode === 'multi'" class="multi-mode-wrapper animate-fade-in">
+          <form (ngSubmit)="applyMultiSearch()" class="multi-filter-form">
+            <div class="multi-grid">
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="multi-field">
+                <mat-label>Nome do Paciente</mat-label>
+                <mat-icon matIconPrefix color="primary">person</mat-icon>
+                <input matInput type="text" [(ngModel)]="multiPaciente" name="multiPaciente" placeholder="Ex: Ana Maria" autocomplete="off" />
+              </mat-form-field>
 
-          <button 
-            (click)="selectSearchTab('cpf')" 
-            class="tab-btn" 
-            [class.active]="activeSearchTab === 'cpf'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <rect width="18" height="18" x="3" y="3" rx="2"/>
-              <path d="M7 7h10"/>
-              <path d="M7 12h10"/>
-            </svg>
-            Buscar por CPF
-          </button>
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="multi-field">
+                <mat-label>CPF do Paciente</mat-label>
+                <mat-icon matIconPrefix color="primary">badge</mat-icon>
+                <input matInput type="text" [ngModel]="multiCpf" (input)="onMultiCpfInput($event)" name="multiCpf" placeholder="Ex: 000.000.000-00" maxlength="14" autocomplete="off" />
+              </mat-form-field>
 
-          <button 
-            (click)="selectSearchTab('medico')" 
-            class="tab-btn" 
-            [class.active]="activeSearchTab === 'medico'">
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <circle cx="17" cy="6" r="3"/>
-              <path d="M7 13v4a5 5 0 0 0 10 0v-4"/>
-            </svg>
-            Buscar por Médico
-          </button>
-        </div>
-
-        <div class="search-component-container">
-          <!-- 1. Componente de Busca por Paciente (Estrito) -->
-          <app-busca-paciente 
-            *ngIf="activeSearchTab === 'paciente'" 
-            (search)="handleIndividualSearch($event)" 
-            (clear)="clearAllFilters()">
-          </app-busca-paciente>
-
-          <!-- 2. Componente de Busca por CPF (Estrito) -->
-          <app-busca-cpf 
-            *ngIf="activeSearchTab === 'cpf'" 
-            (search)="handleIndividualSearch($event)" 
-            (clear)="clearAllFilters()">
-          </app-busca-cpf>
-
-          <!-- 3. Componente de Busca por Médico (Estrito) -->
-          <app-busca-medico 
-            *ngIf="activeSearchTab === 'medico'" 
-            (search)="handleIndividualSearch($event)" 
-            (clear)="clearAllFilters()">
-          </app-busca-medico>
-        </div>
-      </div>
-
-      <!-- OPÇÃO B: Agrupamento de Múltiplos Filtros Simultâneos -->
-      <div *ngIf="searchMode === 'multi'" class="multi-mode-container">
-        <form (ngSubmit)="applyMultiSearch()" class="multi-filter-form">
-          <div class="multi-inputs-grid">
-            <div class="filter-field">
-              <label>Nome do Paciente</label>
-              <input 
-                type="text" 
-                [(ngModel)]="multiPaciente" 
-                name="multiPaciente" 
-                placeholder="Ex: Ana Maria..."
-              />
+              <mat-form-field appearance="outline" subscriptSizing="dynamic" class="multi-field">
+                <mat-label>Nome do Médico</mat-label>
+                <mat-icon matIconPrefix color="primary">medical_services</mat-icon>
+                <input matInput type="text" [(ngModel)]="multiMedico" name="multiMedico" placeholder="Ex: Dr. Carlos" autocomplete="off" />
+              </mat-form-field>
             </div>
 
-            <div class="filter-field">
-              <label>CPF do Paciente</label>
-              <input 
-                type="text" 
-                [(ngModel)]="multiCpf" 
-                name="multiCpf" 
-                placeholder="Ex: 123.456.789-00"
-              />
+            <div class="multi-actions">
+              <button 
+                mat-raised-button 
+                color="primary" 
+                type="submit" 
+                class="btn-multi-apply"
+                [disabled]="!multiPaciente && !multiCpf && !multiMedico">
+                <mat-icon>filter_alt</mat-icon>
+                <span>Aplicar Múltiplos Filtros</span>
+              </button>
+
+              <button 
+                mat-stroked-button 
+                type="button" 
+                class="btn-multi-clear"
+                (click)="clearAllFilters()" 
+                *ngIf="multiPaciente || multiCpf || multiMedico || hasActiveFilters()">
+                <mat-icon>close</mat-icon>
+                <span>Limpar Filtros</span>
+              </button>
             </div>
-
-            <div class="filter-field">
-              <label>Nome do Médico</label>
-              <input 
-                type="text" 
-                [(ngModel)]="multiMedico" 
-                name="multiMedico" 
-                placeholder="Ex: Dr. Carlos..."
-              />
-            </div>
-          </div>
-
-          <div class="multi-actions">
-            <button type="submit" class="btn-multi-search" [disabled]="!multiPaciente && !multiCpf && !multiMedico">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
-              </svg>
-              <span>Aplicar Múltiplos Filtros</span>
-            </button>
-
-            <button type="button" (click)="clearAllFilters()" class="btn-multi-clear" *ngIf="multiPaciente || multiCpf || multiMedico || hasActiveFilters()">
-              Limpar Filtros
-            </button>
-          </div>
-        </form>
-      </div>
-
-      <!-- Indicador de Filtros Ativos -->
-      <div class="active-filter-indicator" *ngIf="hasActiveFilters()">
-        <div class="filter-badges-wrapper">
-          <span class="indicator-title">Filtros aplicados:</span>
-          <span *ngIf="activeFilters.paciente" class="active-tag">Paciente: "{{ activeFilters.paciente }}"</span>
-          <span *ngIf="activeFilters.cpf" class="active-tag">CPF: "{{ activeFilters.cpf }}"</span>
-          <span *ngIf="activeFilters.medico" class="active-tag">Médico: "{{ activeFilters.medico }}"</span>
+          </form>
         </div>
-        <button (click)="clearAllFilters()" class="btn-remove-filter">Limpar Filtros</button>
+
+        <!-- Indicador de Filtros Ativos (MatChips) -->
+        <div class="active-chips-bar" *ngIf="hasActiveFilters()">
+          <span class="chips-title">Filtros Ativos:</span>
+          <mat-chip-listbox aria-label="Filtros Ativos">
+            <mat-chip *ngIf="activeFilters.paciente" color="primary" highlighted class="custom-chip">
+              Paciente: {{ activeFilters.paciente }}
+            </mat-chip>
+            <mat-chip *ngIf="activeFilters.cpf" color="primary" highlighted class="custom-chip">
+              CPF: {{ activeFilters.cpf }}
+            </mat-chip>
+            <mat-chip *ngIf="activeFilters.medico" color="primary" highlighted class="custom-chip">
+              Médico: {{ activeFilters.medico }}
+            </mat-chip>
+          </mat-chip-listbox>
+
+          <button mat-button color="warn" (click)="clearAllFilters()" class="btn-clear-chips">
+            <mat-icon>close</mat-icon> Remover Filtros
+          </button>
+        </div>
+      </mat-card-content>
+    </mat-card>
+
+    <!-- Feedback Alerta de Erro na API (Material Banner) -->
+    <div *ngIf="errorMessage" class="error-banner-mat animate-fade-in">
+      <mat-icon color="warn">error_outline</mat-icon>
+      <div class="banner-text">
+        <strong>Falha de Comunicação:</strong>
+        <span>{{ errorMessage }}</span>
       </div>
+      <button mat-flat-button color="warn" (click)="loadData()">Tentar Novamente</button>
     </div>
 
-    <!-- Feedback Alerta de Erro na API -->
-    <div *ngIf="errorMessage" class="alert-banner error-banner animate-fade-in">
-      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="10.29 3.86 1.82 18 22 18 10.29 3.86"/>
-        <line x1="12" y1="9" x2="12" y2="13"/>
-        <line x1="12" y1="17" x2="12.01" y2="17"/>
-      </svg>
-      <div class="alert-content">
-        <strong>Atenção (Resiliência de UI):</strong>
-        <p>{{ errorMessage }}</p>
-      </div>
-      <button (click)="loadData()" class="btn-retry">Tentar Novamente</button>
+    <!-- Loading State (MatSpinner) -->
+    <div *ngIf="loading" class="loading-state-mat">
+      <mat-spinner diameter="44" color="primary"></mat-spinner>
+      <p>Carregando agendamentos...</p>
     </div>
 
-    <!-- Loading State -->
-    <div *ngIf="loading" class="loading-state">
-      <div class="spinner-large"></div>
-      <p>Consultando servidores...</p>
-    </div>
+    <!-- Container da Tabela TABULATOR (MatCard Encapsulator) -->
+    <mat-card [hidden]="loading" class="table-mat-card">
+      <mat-card-content class="table-card-body">
+        <!-- O DIV DO TABULATOR CONTINUA AQUI ESTRITAMENTE MANTIDO -->
+        <div #tabulatorTable class="tabulator-container"></div>
+      </mat-card-content>
 
-    <!-- Tabulator Table Container -->
-    <div [hidden]="loading" class="table-card">
-      <div #tabulatorTable class="tabulator-element"></div>
-
-      <!-- Barra de Paginação Server-Side -->
-      <div class="server-pagination-bar" *ngIf="totalRecords > 0">
-        <div class="pagination-info">
+      <!-- Paginação Server-Side Integrada ao Material -->
+      <mat-card-footer class="pagination-footer-mat" *ngIf="totalRecords > 0">
+        <div class="page-info">
           Exibindo página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong> (Total: <strong>{{ totalRecords }}</strong> agendamentos)
         </div>
 
-        <div class="pagination-controls">
-          <button (click)="goToPage(1)" [disabled]="currentPage === 1" class="btn-page" title="Primeira Página">
-            «
+        <div class="page-buttons">
+          <button mat-icon-button (click)="goToPage(1)" [disabled]="currentPage === 1" matTooltip="Primeira Página">
+            <mat-icon>first_page</mat-icon>
           </button>
-          <button (click)="prevPage()" [disabled]="currentPage === 1" class="btn-page">
-            Anterior
+          <button mat-icon-button (click)="prevPage()" [disabled]="currentPage === 1" matTooltip="Página Anterior">
+            <mat-icon>chevron_left</mat-icon>
           </button>
 
-          <span class="page-badge">{{ currentPage }} / {{ totalPages }}</span>
+          <span class="current-badge">{{ currentPage }} / {{ totalPages }}</span>
 
-          <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="btn-page">
-            Próxima
+          <button mat-icon-button (click)="nextPage()" [disabled]="currentPage === totalPages" matTooltip="Próxima Página">
+            <mat-icon>chevron_right</mat-icon>
           </button>
-          <button (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages" class="btn-page" title="Última Página">
-            »
+          <button mat-icon-button (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages" matTooltip="Última Página">
+            <mat-icon>last_page</mat-icon>
           </button>
         </div>
-      </div>
-    </div>
+      </mat-card-footer>
+    </mat-card>
   </main>
 </div>

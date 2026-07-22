@@ -2,7 +2,13 @@ import { Injectable } from '@angular/core';
 import { HttpClient, HttpParams, HttpErrorResponse } from '@angular/common/http';
 import { Observable, throwError } from 'rxjs';
 import { catchError, map, timeout } from 'rxjs/operators';
-import { Agendamento } from '../models/agendamento.model';
+import { Agendamento, PaginatedAgendamentoResponse } from '../models/agendamento.model';
+
+export interface AgendaFilters {
+  paciente?: string;
+  cpf?: string;
+  medico?: string;
+}
 
 @Injectable({
   providedIn: 'root'
@@ -12,14 +18,38 @@ export class AgendaService {
 
   constructor(private http: HttpClient) {}
 
-  getAgendamentos(fail: boolean = false, empty: boolean = false): Observable<Agendamento[]> {
-    let params = new HttpParams();
+  getAgendamentos(
+    page: number = 1,
+    limit: number = 10,
+    filters: AgendaFilters = {},
+    fail: boolean = false,
+    empty: boolean = false
+  ): Observable<PaginatedAgendamentoResponse> {
+    let params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    if (filters.paciente && filters.paciente.trim()) {
+      params = params.set('paciente', filters.paciente.trim());
+    }
+
+    if (filters.cpf && filters.cpf.trim()) {
+      params = params.set('cpf', filters.cpf.trim());
+    }
+
+    if (filters.medico && filters.medico.trim()) {
+      params = params.set('medico', filters.medico.trim());
+    }
+
     if (fail) params = params.set('fail', 'true');
     if (empty) params = params.set('empty', 'true');
 
-    return this.http.get<Agendamento[]>(this.mockApiUrl, { params }).pipe(
+    return this.http.get<PaginatedAgendamentoResponse>(this.mockApiUrl, { params }).pipe(
       timeout(10000), // 10s timeout
-      map((agendamentos) => this.sanitizeAgendamentos(agendamentos)),
+      map((res) => ({
+        ...res,
+        data: this.sanitizeAgendamentos(res.data)
+      })),
       catchError(this.handleError)
     );
   }

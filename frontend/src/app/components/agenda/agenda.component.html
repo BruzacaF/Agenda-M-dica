@@ -32,7 +32,7 @@
     <div class="page-header">
       <div>
         <h1>Consultas e Agendamentos</h1>
-        <p class="subtitle">Gerencie os horários e pacientes cadastrados na clínica</p>
+        <p class="subtitle">Pesquisa com filtros individuais ou agrupados por múltiplos campos</p>
       </div>
 
       <!-- Test Controls / Resilience Simulator -->
@@ -54,33 +54,153 @@
       </div>
     </div>
 
-    <!-- Barra de Filtro / Busca -->
-    <div class="filter-card">
-      <div class="search-input-group">
-        <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/>
-          <path d="m21 21-4.3-4.3"/>
-        </svg>
-        <input 
-          type="text" 
-          [(ngModel)]="searchTerm" 
-          (input)="onSearchChange()" 
-          placeholder="Buscar por nome do paciente, CPF ou médico..."
-        />
-        <button *ngIf="searchTerm" (click)="searchTerm = ''; onSearchChange()" class="btn-clear-search">
-          ✕
-        </button>
+    <!-- Seção Principal de Busca (Modo Individual ou Multi-Filtros) -->
+    <div class="search-section-card">
+      <div class="mode-selector-bar">
+        <div class="mode-toggle">
+          <button 
+            (click)="switchSearchMode('individual')" 
+            class="mode-btn" 
+            [class.active]="searchMode === 'individual'">
+            Filtros Individuais (Por Aba)
+          </button>
+          <button 
+            (click)="switchSearchMode('multi')" 
+            class="mode-btn" 
+            [class.active]="searchMode === 'multi'">
+            Múltiplos Filtros (Agrupados)
+          </button>
+        </div>
       </div>
-      
-      <div class="records-count" *ngIf="!loading && !errorMessage">
-        Registros: <strong>{{ agendamentos.length }}</strong>
+
+      <!-- OPÇÃO A: Filtros Individuais via Abas -->
+      <div *ngIf="searchMode === 'individual'" class="individual-mode-container">
+        <div class="search-tabs">
+          <button 
+            (click)="selectSearchTab('paciente')" 
+            class="tab-btn" 
+            [class.active]="activeSearchTab === 'paciente'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/>
+              <circle cx="12" cy="7" r="4"/>
+            </svg>
+            Buscar por Paciente
+          </button>
+
+          <button 
+            (click)="selectSearchTab('cpf')" 
+            class="tab-btn" 
+            [class.active]="activeSearchTab === 'cpf'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect width="18" height="18" x="3" y="3" rx="2"/>
+              <path d="M7 7h10"/>
+              <path d="M7 12h10"/>
+            </svg>
+            Buscar por CPF
+          </button>
+
+          <button 
+            (click)="selectSearchTab('medico')" 
+            class="tab-btn" 
+            [class.active]="activeSearchTab === 'medico'">
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="17" cy="6" r="3"/>
+              <path d="M7 13v4a5 5 0 0 0 10 0v-4"/>
+            </svg>
+            Buscar por Médico
+          </button>
+        </div>
+
+        <div class="search-component-container">
+          <!-- 1. Componente de Busca por Paciente (Estrito) -->
+          <app-busca-paciente 
+            *ngIf="activeSearchTab === 'paciente'" 
+            (search)="handleIndividualSearch($event)" 
+            (clear)="clearAllFilters()">
+          </app-busca-paciente>
+
+          <!-- 2. Componente de Busca por CPF (Estrito) -->
+          <app-busca-cpf 
+            *ngIf="activeSearchTab === 'cpf'" 
+            (search)="handleIndividualSearch($event)" 
+            (clear)="clearAllFilters()">
+          </app-busca-cpf>
+
+          <!-- 3. Componente de Busca por Médico (Estrito) -->
+          <app-busca-medico 
+            *ngIf="activeSearchTab === 'medico'" 
+            (search)="handleIndividualSearch($event)" 
+            (clear)="clearAllFilters()">
+          </app-busca-medico>
+        </div>
+      </div>
+
+      <!-- OPÇÃO B: Agrupamento de Múltiplos Filtros Simultâneos -->
+      <div *ngIf="searchMode === 'multi'" class="multi-mode-container">
+        <form (ngSubmit)="applyMultiSearch()" class="multi-filter-form">
+          <div class="multi-inputs-grid">
+            <div class="filter-field">
+              <label>Nome do Paciente</label>
+              <input 
+                type="text" 
+                [(ngModel)]="multiPaciente" 
+                name="multiPaciente" 
+                placeholder="Ex: Ana Maria..."
+              />
+            </div>
+
+            <div class="filter-field">
+              <label>CPF do Paciente</label>
+              <input 
+                type="text" 
+                [(ngModel)]="multiCpf" 
+                name="multiCpf" 
+                placeholder="Ex: 123.456.789-00"
+              />
+            </div>
+
+            <div class="filter-field">
+              <label>Nome do Médico</label>
+              <input 
+                type="text" 
+                [(ngModel)]="multiMedico" 
+                name="multiMedico" 
+                placeholder="Ex: Dr. Carlos..."
+              />
+            </div>
+          </div>
+
+          <div class="multi-actions">
+            <button type="submit" class="btn-multi-search" [disabled]="!multiPaciente && !multiCpf && !multiMedico">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              </svg>
+              <span>Aplicar Múltiplos Filtros</span>
+            </button>
+
+            <button type="button" (click)="clearAllFilters()" class="btn-multi-clear" *ngIf="multiPaciente || multiCpf || multiMedico || hasActiveFilters()">
+              Limpar Filtros
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Indicador de Filtros Ativos -->
+      <div class="active-filter-indicator" *ngIf="hasActiveFilters()">
+        <div class="filter-badges-wrapper">
+          <span class="indicator-title">Filtros aplicados:</span>
+          <span *ngIf="activeFilters.paciente" class="active-tag">Paciente: "{{ activeFilters.paciente }}"</span>
+          <span *ngIf="activeFilters.cpf" class="active-tag">CPF: "{{ activeFilters.cpf }}"</span>
+          <span *ngIf="activeFilters.medico" class="active-tag">Médico: "{{ activeFilters.medico }}"</span>
+        </div>
+        <button (click)="clearAllFilters()" class="btn-remove-filter">Limpar Filtros</button>
       </div>
     </div>
 
     <!-- Feedback Alerta de Erro na API -->
     <div *ngIf="errorMessage" class="alert-banner error-banner animate-fade-in">
       <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <triangle points="10.29 3.86 1.82 18 18 1.82 22 10.29 3.86"/>
+        <polygon points="10.29 3.86 1.82 18 22 18 10.29 3.86"/>
         <line x1="12" y1="9" x2="12" y2="13"/>
         <line x1="12" y1="17" x2="12.01" y2="17"/>
       </svg>
@@ -94,12 +214,37 @@
     <!-- Loading State -->
     <div *ngIf="loading" class="loading-state">
       <div class="spinner-large"></div>
-      <p>Carregando dados da Mock API...</p>
+      <p>Consultando servidores...</p>
     </div>
 
     <!-- Tabulator Table Container -->
     <div [hidden]="loading" class="table-card">
       <div #tabulatorTable class="tabulator-element"></div>
+
+      <!-- Barra de Paginação Server-Side -->
+      <div class="server-pagination-bar" *ngIf="totalRecords > 0">
+        <div class="pagination-info">
+          Exibindo página <strong>{{ currentPage }}</strong> de <strong>{{ totalPages }}</strong> (Total: <strong>{{ totalRecords }}</strong> agendamentos)
+        </div>
+
+        <div class="pagination-controls">
+          <button (click)="goToPage(1)" [disabled]="currentPage === 1" class="btn-page" title="Primeira Página">
+            «
+          </button>
+          <button (click)="prevPage()" [disabled]="currentPage === 1" class="btn-page">
+            Anterior
+          </button>
+
+          <span class="page-badge">{{ currentPage }} / {{ totalPages }}</span>
+
+          <button (click)="nextPage()" [disabled]="currentPage === totalPages" class="btn-page">
+            Próxima
+          </button>
+          <button (click)="goToPage(totalPages)" [disabled]="currentPage === totalPages" class="btn-page" title="Última Página">
+            »
+          </button>
+        </div>
+      </div>
     </div>
   </main>
 </div>

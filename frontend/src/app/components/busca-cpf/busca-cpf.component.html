@@ -1,26 +1,38 @@
-<form (ngSubmit)="onSearch()" class="search-component-form">
-  <div class="input-wrapper">
-    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <rect width="18" height="18" x="3" y="3" rx="2"/>
-      <path d="M7 7h10"/>
-      <path d="M7 12h10"/>
-      <path d="M7 17h6"/>
-    </svg>
+<form (ngSubmit)="onSearch()" class="search-form-material">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
+    <mat-label>CPF do Paciente</mat-label>
+    <mat-icon matIconPrefix color="primary">badge</mat-icon>
     <input 
+      matInput 
       type="text" 
-      [(ngModel)]="cpf" 
+      [ngModel]="cpf" 
+      (input)="onCpfInput($event)"
       name="cpf" 
-      placeholder="Digite o CPF do paciente (com ou sem pontuação)..."
+      placeholder="000.000.000-00"
+      maxlength="14"
+      autocomplete="off"
     />
+  </mat-form-field>
+
+  <div class="actions-group">
+    <button 
+      mat-raised-button 
+      color="primary" 
+      type="submit" 
+      class="btn-mat-action" 
+      [disabled]="!cpf.trim()">
+      <mat-icon>search</mat-icon>
+      <span>Pesquisar</span>
+    </button>
+
+    <button 
+      mat-stroked-button 
+      type="button" 
+      *ngIf="cpf" 
+      (click)="onClear()" 
+      class="btn-mat-clear">
+      <mat-icon>close</mat-icon>
+      <span>Limpar</span>
+    </button>
   </div>
-  <button type="submit" [disabled]="!cpf.trim()" class="btn-search">
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="8"/>
-      <path d="m21 21-4.3-4.3"/>
-    </svg>
-    <span>Buscar CPF</span>
-  </button>
-  <button type="button" *ngIf="cpf" (click)="onClear()" class="btn-clear">
-    Limpar
-  </button>
 </form>

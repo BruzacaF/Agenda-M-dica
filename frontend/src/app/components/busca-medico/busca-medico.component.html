@@ -1,25 +1,36 @@
-<form (ngSubmit)="onSearch()" class="search-component-form">
-  <div class="input-wrapper">
-    <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M4.8 2.3A.3.3 0 0 0 4.5 2H3a1 1 0 0 0-1 1v5a5 5 0 0 0 5 5 5 5 0 0 0 5-5V3a1 1 0 0 0-1-1h-1.5a.3.3 0 0 0-.3.3v4.4a.3.3 0 0 1-.3.3H6.1a.3.3 0 0 1-.3-.3V2.3Z"/>
-      <path d="M7 13v4a5 5 0 0 0 10 0v-4"/>
-      <circle cx="17" cy="6" r="3"/>
-    </svg>
+<form (ngSubmit)="onSearch()" class="search-form-material">
+  <mat-form-field appearance="outline" subscriptSizing="dynamic" class="search-field">
+    <mat-label>Nome do Médico</mat-label>
+    <mat-icon matIconPrefix color="primary">medical_services</mat-icon>
     <input 
+      matInput 
       type="text" 
       [(ngModel)]="nomeMedico" 
       name="nomeMedico" 
-      placeholder="Digite o nome do médico responsável..."
+      placeholder="Ex: Dr. Carlos Eduardo..."
+      autocomplete="off"
     />
+  </mat-form-field>
+
+  <div class="actions-group">
+    <button 
+      mat-raised-button 
+      color="primary" 
+      type="submit" 
+      class="btn-mat-action" 
+      [disabled]="!nomeMedico.trim()">
+      <mat-icon>search</mat-icon>
+      <span>Pesquisar</span>
+    </button>
+
+    <button 
+      mat-stroked-button 
+      type="button" 
+      *ngIf="nomeMedico" 
+      (click)="onClear()" 
+      class="btn-mat-clear">
+      <mat-icon>close</mat-icon>
+      <span>Limpar</span>
+    </button>
   </div>
-  <button type="submit" [disabled]="!nomeMedico.trim()" class="btn-search">
-    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-      <circle cx="11" cy="11" r="8"/>
-      <path d="m21 21-4.3-4.3"/>
-    </svg>
-    <span>Buscar Médico</span>
-  </button>
-  <button type="button" *ngIf="nomeMedico" (click)="onClear()" class="btn-clear">
-    Limpar
-  </button>
 </form>
